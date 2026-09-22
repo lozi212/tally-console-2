@@ -12,6 +12,9 @@ afterEach(() => {
   server.resetHandlers()
   // NOTE: this also clears db.sessions, so every test must log in for itself.
   resetDb()
+  // The session token lives here; a leftover one would log the next test in.
+  window.localStorage.clear()
+  window.history.replaceState(null, '', '/')
 })
 
 afterAll(() => server.close())
