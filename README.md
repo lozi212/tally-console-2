@@ -72,6 +72,9 @@ npm run build
 
 _(kept current as work progresses)_
 
+- **Transactions list, detail and refund** are not built yet — the routes exist but show
+  placeholders.
+
 - **Session does not survive a page reload.** The mock stores sessions in an in-memory
   `Map`, which is recreated when the page reloads, so a persisted token is always
   rejected. The reload flow is still implemented as specified — bootstrap `GET /api/me`
