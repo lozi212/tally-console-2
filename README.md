@@ -72,8 +72,11 @@ npm run build
 
 _(kept current as work progresses)_
 
-- **Transactions list, detail and refund** are not built yet — the routes exist but show
-  placeholders.
+- **Transaction detail and refund** are not built yet — the route exists but shows a
+  placeholder.
+- **The list loads all 5,000 rows at once**, because the mock returns everything and
+  supports no server-side paging. Search, filtering, sorting and paging therefore run in
+  the browser.
 
 - **Session does not survive a page reload.** The mock stores sessions in an in-memory
   `Map`, which is recreated when the page reloads, so a persisted token is always
