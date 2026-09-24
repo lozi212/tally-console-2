@@ -88,12 +88,12 @@ describe('transactions list', () => {
   })
 
   it('shows an error with a working Retry button', async () => {
-    let fail = true
+    // The wildcard matches the absolute URL the app requests; a bare
+    // '/api/transactions' would not.
     server.use(
-      http.get('*/api/transactions', () => {
-        if (!fail) return undefined
-        return HttpResponse.json({ message: 'Internal server error' }, { status: 500 })
-      }),
+      http.get('*/api/transactions', () =>
+        HttpResponse.json({ message: 'Internal server error' }, { status: 500 }),
+      ),
     )
 
     await signedIn()
@@ -102,7 +102,8 @@ describe('transactions list', () => {
       await screen.findByText(/could not load transactions/i, undefined, { timeout: 5000 }),
     ).toBeInTheDocument()
 
-    fail = false
+    // Drop the override so the real handler answers the retry.
+    server.resetHandlers()
     await userEvent.click(screen.getByRole('button', { name: /retry/i }))
     expect((await rowsLoaded()).length).toBeGreaterThan(1)
   })
