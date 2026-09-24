@@ -42,9 +42,8 @@ describe('authentication', () => {
   it('logs in, stores the token and returns to the page originally requested', async () => {
     renderAt('/transactions/txn_FIXED_PARTIAL')
     await signIn()
-    expect(
-      await screen.findByRole('heading', { name: 'Transaction txn_FIXED_PARTIAL' }),
-    ).toBeInTheDocument()
+    // txn_FIXED_PARTIAL is INV-00002; the detail page heads with the reference.
+    expect(await screen.findByRole('heading', { name: 'INV-00002' })).toBeInTheDocument()
     expect(screen.getByText('Selam')).toBeInTheDocument()
     expect(window.localStorage.getItem(TOKEN_STORAGE_KEY)).toMatch(/^"tok_/)
   })

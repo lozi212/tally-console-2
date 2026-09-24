@@ -34,7 +34,8 @@ describe('transactions list', () => {
 
   it('lists transactions with formatted amounts, status chips and dates', async () => {
     await signedIn('/transactions?q=INV-00001')
-    expect(await screen.findByText('INV-00001')).toBeInTheDocument()
+    await rowsLoaded()
+    expect(screen.getByText('INV-00001')).toBeInTheDocument()
     expect(screen.getByText('Selam Tadesse')).toBeInTheDocument()
     expect(screen.getByText('ETB 1,250.00')).toBeInTheDocument()
     expect(screen.getByText('Succeeded')).toBeInTheDocument()

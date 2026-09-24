@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch, isApiError } from '../lib/api'
 import { useAuth } from '../auth/authContext'
-import type { TransactionListRow } from '../types/transaction'
+import type { Transaction, TransactionListRow } from '../types/transaction'
 
 export const transactionsKey = ['transactions'] as const
 export const transactionKey = (id: string) => ['transaction', id] as const
@@ -33,5 +33,45 @@ export function useTransactions() {
     queryFn: ({ signal }) => authedFetch<TransactionListRow[]>('/api/transactions', { signal }),
     // The whole list is one 5,000-row response; don't re-fetch it on every mount.
     staleTime: 60_000,
+  })
+}
+
+export function useTransaction(id: string) {
+  const authedFetch = useAuthedFetch()
+  return useQuery({
+    queryKey: transactionKey(id),
+    queryFn: ({ signal }) => authedFetch<Transaction>(`/api/transactions/${id}`, { signal }),
+    // A missing transaction is a normal outcome shown in-page; everything else
+    // is thrown to the error boundary, which offers a retry.
+    throwOnError: (error) => !isApiError(error, 404),
+  })
+}
+
+export interface RefundInput {
+  amount: number
+  reason: string
+}
+
+export function useRefund(id: string) {
+  const authedFetch = useAuthedFetch()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: RefundInput) =>
+      authedFetch<Transaction>(`/api/transactions/${id}/refund`, {
+        method: 'POST',
+        body: input,
+      }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(transactionKey(updated.id), updated)
+      // Patch the one row in the cached list instead of refetching all 5,000.
+      queryClient.setQueryData(transactionsKey, (rows: TransactionListRow[] | undefined) =>
+        rows?.map((row) =>
+          row.id === updated.id
+            ? { ...row, status: updated.status, refundedAmount: updated.refundedAmount }
+            : row,
+        ),
+      )
+    },
   })
 }
