@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CssBaseline, ThemeProvider } from '@mui/material'
+import { isApiError } from './lib/api'
 import { AuthProvider } from './auth/AuthProvider'
 import { useAuth } from './auth/authContext'
 import { FullPageLoader } from './components/FullPageStatus'
@@ -14,8 +15,14 @@ const UnauthenticatedApp = lazy(() => import('./UnauthenticatedApp'))
 function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
-      // The mock fails ~5% of requests; one automatic retry hides most of those.
-      queries: { retry: 1, refetchOnWindowFocus: false },
+      queries: {
+        // The mock fails ~5% of requests with a 500; one automatic retry hides
+        // most of those. A 4xx is the server's considered answer, so retrying
+        // it only delays the message the user needs to see.
+        retry: (failureCount, error) =>
+          !(isApiError(error) && error.status < 500) && failureCount < 1,
+        refetchOnWindowFocus: false,
+      },
     },
   })
 }
