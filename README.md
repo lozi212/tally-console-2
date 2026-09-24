@@ -72,8 +72,8 @@ npm run build
 
 _(kept current as work progresses)_
 
-- **Transaction detail and refund** are not built yet — the route exists but shows a
-  placeholder.
+- **Stretch goals are not done yet**: summary cards, prefetch on row hover, a
+  light/dark toggle and an end-to-end test are the candidates.
 - **The list loads all 5,000 rows at once**, because the mock returns everything and
   supports no server-side paging. Search, filtering, sorting and paging therefore run in
   the browser.
