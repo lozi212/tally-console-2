@@ -1,9 +1,22 @@
 import { Outlet, Link as RouterLink } from 'react-router-dom'
-import { AppBar, Box, Button, Container, Toolbar, Typography } from '@mui/material'
+import {
+  AppBar,
+  Box,
+  Button,
+  Container,
+  IconButton,
+  Toolbar,
+  Tooltip,
+  Typography,
+} from '@mui/material'
+import DarkModeIcon from '@mui/icons-material/DarkModeOutlined'
+import LightModeIcon from '@mui/icons-material/LightModeOutlined'
 import { useAuth } from '../auth/authContext'
+import { useThemeMode } from '../theme-mode'
 
 export default function AppLayout() {
   const { user, logout } = useAuth()
+  const { mode, toggle } = useThemeMode()
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -25,6 +38,15 @@ export default function AppLayout() {
           <Typography variant="body2" color="text.secondary">
             {user?.name}
           </Typography>
+          <Tooltip title={mode === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}>
+            <IconButton
+              onClick={toggle}
+              color="inherit"
+              aria-label={mode === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+            >
+              {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+            </IconButton>
+          </Tooltip>
           <Button color="inherit" onClick={logout}>
             Log out
           </Button>
