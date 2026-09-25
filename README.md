@@ -72,8 +72,12 @@ npm run build
 
 _(kept current as work progresses)_
 
-- **Stretch goals are not done yet**: summary cards, prefetch on row hover, a
-  light/dark toggle and an end-to-end test are the candidates.
+- **Two stretch goals are done**: the detail is prefetched when the pointer rests on a
+  row, and the light/dark choice is remembered. The summary cards and an end-to-end
+  Playwright flow were left out, as the brief allows at most two.
+- **The signed-in bundle is large** (~590 kB, 169 kB gzipped) because Material React
+  Table and the MUI date pickers it depends on are in it. A signed-out visitor does not
+  download any of it. Trimming it further would mean replacing the table.
 - **The list loads all 5,000 rows at once**, because the mock returns everything and
   supports no server-side paging. Search, filtering, sorting and paging therefore run in
   the browser.
