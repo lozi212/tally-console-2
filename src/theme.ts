@@ -23,7 +23,6 @@ export const theme = createTheme({
   },
 
   typography: {
-    fontFamily:
-      'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   },
 })
