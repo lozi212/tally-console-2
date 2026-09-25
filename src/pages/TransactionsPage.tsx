@@ -9,7 +9,7 @@ import {
 import { Alert, Box, Button, Stack, Tooltip, Typography } from '@mui/material'
 import StatusChip from '../components/StatusChip'
 import { formatDate, formatFullDate, formatMoney, humanise } from '../lib/format'
-import { useTransactions } from '../transactions/queries'
+import { usePrefetchTransaction, useTransactions } from '../transactions/queries'
 import { useTableUrlState } from '../transactions/useTableUrlState'
 import { METHODS, STATUSES, type TransactionListRow } from '../types/transaction'
 
@@ -25,6 +25,7 @@ const matchesAny: MRT_FilterFn<TransactionListRow> = (row, columnId, filterValue
 
 export default function TransactionsPage() {
   const navigate = useNavigate()
+  const prefetchTransaction = usePrefetchTransaction()
   const { data, isPending, isError, error, refetch, isFetching } = useTransactions()
   const {
     globalFilter,
@@ -138,6 +139,8 @@ export default function TransactionsPage() {
     },
     muiTableBodyRowProps: ({ row }) => ({
       onClick: () => navigate(`/transactions/${row.original.id}`),
+      // Load the detail before the click lands, so the page is usually instant.
+      onMouseEnter: () => prefetchTransaction(row.original.id),
       sx: { cursor: 'pointer' },
     }),
     renderEmptyRowsFallback: () => (

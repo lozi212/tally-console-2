@@ -47,6 +47,27 @@ export function useTransaction(id: string) {
   })
 }
 
+/**
+ * Warms the detail cache from the list. Hovering a row is a good signal the
+ * user is about to open it, and `prefetchQuery` is a no-op when the data is
+ * already cached, so repeated hovers cost nothing.
+ */
+export function usePrefetchTransaction() {
+  const authedFetch = useAuthedFetch()
+  const queryClient = useQueryClient()
+
+  return useCallback(
+    (id: string) => {
+      void queryClient.prefetchQuery({
+        queryKey: transactionKey(id),
+        queryFn: ({ signal }) => authedFetch<Transaction>(`/api/transactions/${id}`, { signal }),
+        staleTime: 30_000,
+      })
+    },
+    [authedFetch, queryClient],
+  )
+}
+
 export interface RefundInput {
   amount: number
   reason: string
