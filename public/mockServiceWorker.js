@@ -91,6 +91,15 @@ addEventListener('message', async function (event) {
 addEventListener('fetch', function (event) {
   const requestInterceptedAt = Date.now()
 
+  // LOCAL PATCH (see README): only the mock API concerns this worker.
+  // Everything else — Vite's modules and hot reload, page navigations, browser
+  // prefetches, DevTools probes — is left to the browser. Forwarding those
+  // through the worker gained nothing and threw "Failed to fetch" from
+  // passthrough() whenever the browser abandoned one of them.
+  if (!new URL(event.request.url).pathname.startsWith('/api/')) {
+    return
+  }
+
   // Bypass navigation requests.
   if (event.request.mode === 'navigate') {
     return
