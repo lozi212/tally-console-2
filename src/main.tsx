@@ -16,6 +16,36 @@ async function enableMocking() {
   // Says which code this tab is running: if this line is missing from the
   // console, the tab is serving an older bundle and needs a hard reload.
   console.info('[dev] Mock API ready — session recovery armed.')
+
+  // Type tallyDiagnose() in the console to see why a session was lost.
+  Object.assign(window, {
+    tallyDiagnose: async () => {
+      const read = (key: string) => {
+        try {
+          return localStorage.getItem(key)
+        } catch {
+          return '<unreadable>'
+        }
+      }
+      const token = read('tally.token')
+      const sessions = read('tally.mock-sessions')
+      const parsed = sessions ? (JSON.parse(sessions) as [string, unknown][]) : []
+      const me = await fetch('/api/me', {
+        headers: token ? { Authorization: `Bearer ${JSON.parse(token) as string}` } : {},
+      })
+      return {
+        build: 'session-recovery',
+        token: token ? `${(JSON.parse(token) as string).slice(0, 12)}…` : null,
+        username: read('tally.username'),
+        knownSessions: parsed.map(([t]) => `${t.slice(0, 12)}…`),
+        tokenIsKnown: parsed.some(([t]) => token !== null && t === (JSON.parse(token) as string)),
+        apiMeStatus: me.status,
+        servedByWorker: !!navigator.serviceWorker.controller,
+        workerScript: navigator.serviceWorker.controller?.scriptURL ?? null,
+        openTabs: 'check for other tabs on localhost:5173',
+      }
+    },
+  })
   await worker.start({
     onUnhandledRequest: 'bypass',
     // Without this the browser may keep serving a cached worker script. A stale
