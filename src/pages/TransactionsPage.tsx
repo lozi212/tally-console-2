@@ -152,6 +152,12 @@ export default function TransactionsPage() {
         sx={{ minWidth: 260 }}
       />
     ),
+    // Rows must all be the same height. Otherwise a page of taller rows moves
+    // the pagination controls, and the next click lands on a row instead of
+    // the button it was aimed at.
+    muiTableBodyCellProps: {
+      sx: { height: 72, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+    },
     muiTableBodyRowProps: ({ row }) => ({
       onClick: () => navigate(`/transactions/${row.original.id}`),
       // Load the detail before the click lands, so the page is usually instant.
