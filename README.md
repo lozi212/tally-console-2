@@ -111,6 +111,11 @@ VITE_API_LATENCY=0
   mid-task. `src/auth/devSessionRecovery.ts` signs the same user back in when that
   happens and the request is retried once. It does nothing in production, where a 401
   means what it says, and nothing after an explicit logout — both are covered by tests.
+- **Every tab runs its own copy of the mock**, so a token minted in one tab was unknown
+  to the next: the tabs invalidated each other's sessions in turn and the user was
+  bounced to the login page again and again. The shim shares the sessions through
+  `localStorage`, looks them up when a token is missed, and merges what another tab
+  writes.
 - **Sessions are also persisted in development by a shim.** The mock holds sessions in an
   in-memory `Map`, so every page load — a reload, or one of Vite's hot reloads — began
   with none; the stored token was then rejected and the next request logged the user out

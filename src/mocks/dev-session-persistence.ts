@@ -26,6 +26,11 @@ export function keepMockSessionsAcrossReloads() {
   // request logs the user out while they are working.
   import.meta.hot?.on('vite:afterUpdate', restore)
 
+  // Another tab signing in writes to the same store; take its sessions too.
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY) restore()
+  })
+
   const set = db.sessions.set.bind(db.sessions)
   db.sessions.set = (token: string, user: User) => {
     const result = set(token, user)
@@ -39,19 +44,36 @@ export function keepMockSessionsAcrossReloads() {
     save()
     return result
   }
+
+  // Each tab runs its own copy of the mock, so a token minted in one tab is
+  // unknown to the next. Looking the store up on a miss makes every tab accept
+  // every tab's sessions; without it the tabs invalidate each other's tokens
+  // in turn and the user is bounced to the login page again and again.
+  const has = db.sessions.has.bind(db.sessions)
+  db.sessions.has = (token: string) => (has(token) ? true : restore() && has(token))
+
+  const get = db.sessions.get.bind(db.sessions)
+  db.sessions.get = (token: string) => {
+    if (!has(token)) restore()
+    return get(token)
+  }
 }
 
-function restore() {
+/** Merges the stored sessions into this tab's copy. Returns true either way. */
+function restore(): true {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return
-    for (const [token, user] of JSON.parse(raw) as [string, User][]) {
-      db.sessions.set(token, user)
+    if (raw) {
+      for (const [token, user] of JSON.parse(raw) as [string, User][]) {
+        // Map.set directly: going through the wrapped has() would recurse.
+        Map.prototype.set.call(db.sessions, token, user)
+      }
     }
   } catch {
     // A malformed value just means starting logged out.
     localStorage.removeItem(STORAGE_KEY)
   }
+  return true
 }
 
 function save() {
