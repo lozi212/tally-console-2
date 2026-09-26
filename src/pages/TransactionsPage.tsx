@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MaterialReactTable,
@@ -37,6 +37,23 @@ export default function TransactionsPage() {
     setSorting,
     setPagination,
   } = useTableUrlState()
+
+  // The input keeps its own value while typing. Writing every keystroke
+  // straight to the URL made the field's value arrive back a render later, and
+  // characters typed in between were lost.
+  const [searchText, setSearchText] = useState(globalFilter)
+  const [lastUrlSearch, setLastUrlSearch] = useState(globalFilter)
+  if (globalFilter !== lastUrlSearch) {
+    // The URL changed elsewhere (Back, or a shared link): follow it.
+    setLastUrlSearch(globalFilter)
+    setSearchText(globalFilter)
+  }
+
+  useEffect(() => {
+    if (searchText === globalFilter) return
+    const timer = setTimeout(() => setGlobalFilter(searchText), 250)
+    return () => clearTimeout(timer)
+  }, [searchText, globalFilter, setGlobalFilter])
 
   const columns = useMemo<MRT_ColumnDef<TransactionListRow>[]>(
     () => [
@@ -146,8 +163,8 @@ export default function TransactionsPage() {
       <TextField
         size="small"
         placeholder="Search transactions"
-        value={globalFilter}
-        onChange={(event) => setGlobalFilter(event.target.value)}
+        value={searchText}
+        onChange={(event) => setSearchText(event.target.value)}
         slotProps={{ htmlInput: { 'aria-label': 'Search transactions' } }}
         sx={{ minWidth: 260 }}
       />

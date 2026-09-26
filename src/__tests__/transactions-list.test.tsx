@@ -70,6 +70,19 @@ describe('transactions list', () => {
     expect(await screen.findByDisplayValue('Dawit')).toBeInTheDocument()
   })
 
+  it('keeps every character when the search is typed quickly', async () => {
+    await signedIn()
+    await rowsLoaded()
+    const box = screen.getByLabelText('Search transactions')
+
+    // No per-keystroke delay: each character must survive the round trip
+    // through the URL that the previous one starts.
+    await userEvent.type(box, 'dawit', { delay: null })
+
+    expect(box).toHaveValue('dawit')
+    await waitFor(() => expect(window.location.search).toContain('q=dawit'))
+  })
+
   it('restores the previous view when the back button is pressed', async () => {
     await signedIn('/transactions')
     await rowsLoaded()
