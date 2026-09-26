@@ -5,6 +5,7 @@ import { useLocalStorageState } from '../hooks/useLocalStorageState'
 import { FullPageError, FullPageLoader } from '../components/FullPageStatus'
 import type { LoginResponse, User } from '../types/transaction'
 import { AuthContext, meQueryKey, TOKEN_STORAGE_KEY, type AuthContextValue } from './authContext'
+import { recoverDevSession, USERNAME_STORAGE_KEY } from './devSessionRecovery'
 
 /**
  * Owns the session. A stored token is verified with GET /api/me before any
@@ -21,11 +22,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         return await apiFetch<User>('/api/me', { token, signal })
       } catch (error) {
-        if (isApiError(error, 401)) {
-          setToken(null)
-          return null
+        if (!isApiError(error, 401)) throw error
+
+        // The mock forgets its sessions on every page load; sign back in
+        // rather than dumping the user on the login page (dev only).
+        const recovered = await recoverDevSession()
+        if (recovered) {
+          queryClient.setQueryData(meQueryKey(recovered.token), recovered.user)
+          setToken(recovered.token)
+          return recovered.user
         }
-        throw error
+
+        setToken(null)
+        return null
       }
     },
     enabled: token !== null,
@@ -42,12 +51,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       // Seed the cache first so the bootstrap query is already satisfied for the new token.
       queryClient.setQueryData(meQueryKey(newToken), user)
+      // Remembered so a lost mock session can be signed back in (dev only).
+      localStorage.setItem(USERNAME_STORAGE_KEY, JSON.stringify(username))
       setToken(newToken)
     },
     [queryClient, setToken],
   )
 
+  const recoverSession = useCallback(async () => {
+    const recovered = await recoverDevSession()
+    if (!recovered) return null
+    queryClient.setQueryData(meQueryKey(recovered.token), recovered.user)
+    setToken(recovered.token)
+    return recovered.token
+  }, [queryClient, setToken])
+
   const logout = useCallback(() => {
+    localStorage.removeItem(USERNAME_STORAGE_KEY)
     setToken(null)
     // Drop every cached response so the next user cannot see the previous one's data.
     queryClient.clear()
@@ -57,8 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Memoised so consumers only re-render when the session actually changes.
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token: user ? token : null, login, logout }),
-    [user, token, login, logout],
+    () => ({ user, token: user ? token : null, login, logout, recoverSession }),
+    [user, token, login, logout, recoverSession],
   )
 
   if (token && me.isPending) return <FullPageLoader />

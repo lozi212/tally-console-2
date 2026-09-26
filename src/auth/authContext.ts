@@ -9,6 +9,12 @@ export interface AuthContextValue {
   /** Resolves once signed in; rejects with an ApiError the form can display. */
   login: (username: string, password: string) => Promise<void>
   logout: () => void
+  /**
+   * Development only: signs the same user back in when the mock has forgotten
+   * the session, and returns the fresh token. Resolves to null in production,
+   * or when there is nothing to recover from.
+   */
+  recoverSession: () => Promise<string | null>
 }
 
 export const TOKEN_STORAGE_KEY = 'tally.token'

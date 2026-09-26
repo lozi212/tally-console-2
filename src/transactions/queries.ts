@@ -12,17 +12,26 @@ export const transactionKey = (id: string) => ['transaction', id] as const
  * mid-session, so we log out rather than leave the user on a broken page.
  */
 function useAuthedFetch() {
-  const { token, logout } = useAuth()
+  const { token, logout, recoverSession } = useAuth()
   return useCallback(
     async <T>(path: string, options: Parameters<typeof apiFetch>[1] = {}): Promise<T> => {
       try {
         return await apiFetch<T>(path, { ...options, token })
       } catch (error) {
-        if (isApiError(error, 401)) logout()
+        if (!isApiError(error, 401)) throw error
+
+        // A 401 mid-session usually means the mock forgot its sessions rather
+        // than the user losing access, so try once with a fresh session before
+        // giving up. recoverSession() is a no-op in production, where a 401 is
+        // exactly what it says.
+        const recovered = await recoverSession()
+        if (recovered) return await apiFetch<T>(path, { ...options, token: recovered })
+
+        logout()
         throw error
       }
     },
-    [token, logout],
+    [token, logout, recoverSession],
   )
 }
 

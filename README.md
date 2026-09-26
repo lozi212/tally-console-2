@@ -105,7 +105,13 @@ VITE_API_LATENCY=0
   navigations and browser prefetches, and threw `TypeError: Failed to fetch` from
   `passthrough()` whenever the browser abandoned one of them. **Re-running `msw init`
   overwrites this** — the patch is commented in the file.
-- **Sessions are kept alive in development by a shim.** The mock holds sessions in an
+- **A lost mock session is recovered rather than relied upon.** The mock holds sessions
+  in memory, so a reload, a hot reload or a second tab can leave a stored token with no
+  session behind it; every request then 401s and the user lands back on the login page
+  mid-task. `src/auth/devSessionRecovery.ts` signs the same user back in when that
+  happens and the request is retried once. It does nothing in production, where a 401
+  means what it says, and nothing after an explicit logout — both are covered by tests.
+- **Sessions are also persisted in development by a shim.** The mock holds sessions in an
   in-memory `Map`, so every page load — a reload, or one of Vite's hot reloads — began
   with none; the stored token was then rejected and the next request logged the user out
   mid-task. `src/mocks/dev-session-persistence.ts` copies them to `localStorage` and
