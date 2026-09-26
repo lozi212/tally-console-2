@@ -21,6 +21,11 @@ const STORAGE_KEY = 'tally.mock-sessions'
 export function keepMockSessionsAcrossReloads() {
   restore()
 
+  // A hot reload can re-evaluate the mock's module, which builds a fresh empty
+  // database. Without this the sessions vanish mid-session and the next
+  // request logs the user out while they are working.
+  import.meta.hot?.on('vite:afterUpdate', restore)
+
   const set = db.sessions.set.bind(db.sessions)
   db.sessions.set = (token: string, user: User) => {
     const result = set(token, user)
