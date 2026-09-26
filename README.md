@@ -108,7 +108,7 @@ VITE_API_LATENCY=0
 - **Sessions are kept alive in development by a shim.** The mock holds sessions in an
   in-memory `Map`, so every page load — a reload, or one of Vite's hot reloads — began
   with none; the stored token was then rejected and the next request logged the user out
-  mid-task. `src/mocks/dev-session-persistence.ts` copies them to `sessionStorage` and
+  mid-task. `src/mocks/dev-session-persistence.ts` copies them to `localStorage` and
   restores them on the next load. Development only, and the supplied mock is untouched:
   `db.sessions` is a plain `Map`, and the shim only writes to it and wraps `set`/`delete`.
 - **`@faker-js/faker` stays on v9** as the mock's peer range requires. `npm audit` flags a

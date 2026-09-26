@@ -10,9 +10,13 @@ const STORAGE_KEY = 'tally.mock-sessions'
  * request afterwards logs the user out, which makes the app look broken while
  * it is only the mock forgetting.
  *
- * This copies the sessions into sessionStorage and puts them back on the next
- * load. The supplied mock is not modified: `db.sessions` is a plain Map, and
- * this only writes to it and wraps its `set`.
+ * This copies the sessions into localStorage and puts them back on the next
+ * load. localStorage, not sessionStorage, because that is where the app keeps
+ * the token: a session store that emptied when a tab closed would leave the
+ * token behind with nothing to match it, and the next tab would be logged out.
+ *
+ * The supplied mock is not modified: `db.sessions` is a plain Map, and this
+ * only writes to it and wraps its `set` and `delete`.
  */
 export function keepMockSessionsAcrossReloads() {
   restore()
@@ -34,20 +38,20 @@ export function keepMockSessionsAcrossReloads() {
 
 function restore() {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
     for (const [token, user] of JSON.parse(raw) as [string, User][]) {
       db.sessions.set(token, user)
     }
   } catch {
     // A malformed value just means starting logged out.
-    sessionStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(STORAGE_KEY)
   }
 }
 
 function save() {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...db.sessions.entries()]))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...db.sessions.entries()]))
   } catch {
     // Storage unavailable: sessions simply will not survive the next reload.
   }
