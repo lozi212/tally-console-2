@@ -68,6 +68,26 @@ describe('prefetching', () => {
 describe('no console noise', () => {
   beforeEach(() => window.localStorage.clear())
 
+  it(
+    'renders the list, its search and its filters without warnings',
+    { timeout: 20000 },
+    async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await signedIn('/transactions')
+      await rowsLoaded()
+      await userEvent.type(screen.getByLabelText('Search transactions'), 'dawit')
+      await userEvent.click(screen.getByRole('button', { name: /show.*filters/i }))
+      await screen.findAllByPlaceholderText(/^filter by/i)
+
+      expect(error).not.toHaveBeenCalled()
+      expect(warn).not.toHaveBeenCalled()
+      error.mockRestore()
+      warn.mockRestore()
+    },
+  )
+
   it('logs no errors or warnings through a refund', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

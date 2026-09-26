@@ -6,7 +6,7 @@ import {
   type MRT_ColumnDef,
   type MRT_FilterFn,
 } from 'material-react-table'
-import { Alert, Box, Button, Stack, Tooltip, Typography } from '@mui/material'
+import { Alert, Box, Button, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import StatusChip from '../components/StatusChip'
 import { formatDate, formatFullDate, formatMoney, humanise } from '../lib/format'
 import { usePrefetchTransaction, useTransactions } from '../transactions/queries'
@@ -132,11 +132,21 @@ export default function TransactionsPage() {
     enableColumnFilterModes: false,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
-    initialState: { showGlobalFilter: true, density: 'comfortable' },
-    muiSearchTextFieldProps: {
-      placeholder: 'Search transactions',
-      slotProps: { htmlInput: { 'aria-label': 'Search transactions' } },
-    },
+    initialState: { density: 'comfortable' },
+    // The built-in search box is replaced below: MRT 3 passes MUI's removed
+    // `InputProps` to TextField, which MUI 9 forwards to the DOM and React
+    // warns about. Ours is a plain controlled field.
+    positionGlobalFilter: 'none',
+    renderTopToolbarCustomActions: () => (
+      <TextField
+        size="small"
+        placeholder="Search transactions"
+        value={globalFilter}
+        onChange={(event) => setGlobalFilter(event.target.value)}
+        slotProps={{ htmlInput: { 'aria-label': 'Search transactions' } }}
+        sx={{ minWidth: 260 }}
+      />
+    ),
     muiTableBodyRowProps: ({ row }) => ({
       onClick: () => navigate(`/transactions/${row.original.id}`),
       // Load the detail before the click lands, so the page is usually instant.
