@@ -87,8 +87,10 @@ _(kept current as work progresses)_
   supports no server-side paging. Search, filtering, sorting and paging therefore run in
   the browser.
 
-- **Session does not survive a page reload.** The mock stores sessions in an in-memory
-  `Map`, which is recreated when the page reloads, so a persisted token is always
-  rejected. The reload flow is still implemented as specified — bootstrap `GET /api/me`
-  behind a full-page loader, with a 401 clearing the stored token — but it cannot be
-  demonstrated against this mock.
+- **Sessions are kept alive in development by a shim.** The mock stores sessions in an
+  in-memory `Map`, so every page load — a reload, or one of Vite's hot reloads — started
+  with none, the stored token was rejected, and the next request logged the user out
+  mid-task. `src/mocks/dev-session-persistence.ts` copies the sessions to
+  `sessionStorage` and restores them on the next load. It runs in development only and
+  does not modify the supplied mock: `db.sessions` is a plain Map, and the shim only
+  writes to it and wraps `set`/`delete`.

@@ -11,6 +11,8 @@ const RELOADED_FOR_WORKER = 'tally.mock-worker-reload'
 async function enableMocking() {
   if (!import.meta.env.DEV) return
   const { worker } = await import('./mocks/browser')
+  const { keepMockSessionsAcrossReloads } = await import('./mocks/dev-session-persistence')
+  keepMockSessionsAcrossReloads()
   await worker.start({
     onUnhandledRequest: 'bypass',
     // Without this the browser may keep serving a cached worker script. A stale
