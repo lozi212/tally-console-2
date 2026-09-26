@@ -29,54 +29,67 @@ function isStatus(value: string): value is Status {
  * history entry (otherwise every keystroke would need its own Back press);
  * filters, sorting and paging push, so Back returns to the previous view.
  */
+function parseGlobalFilter(params: URLSearchParams): string {
+  return params.get('q') ?? ''
+}
+
+function parseColumnFilters(params: URLSearchParams): MRT_ColumnFiltersState {
+  const raw = params.get('status')
+  if (!raw) return []
+  const statuses = raw.split(',').filter(isStatus)
+  return statuses.length ? [{ id: 'status', value: statuses }] : []
+}
+
+function parseSorting(params: URLSearchParams): MRT_SortingState {
+  const raw = params.get('sort')
+  if (!raw) return []
+  const [id, direction] = raw.split('.')
+  return id ? [{ id, desc: direction === 'desc' }] : []
+}
+
+function parsePagination(params: URLSearchParams): MRT_PaginationState {
+  const page = Number(params.get('page'))
+  const size = Number(params.get('size'))
+  return {
+    // The URL is 1-based for humans; the table is 0-based.
+    pageIndex: Number.isInteger(page) && page > 0 ? page - 1 : 0,
+    pageSize: Number.isInteger(size) && size > 0 ? size : DEFAULT_PAGE_SIZE,
+  }
+}
+
 export function useTableUrlState() {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const globalFilter = searchParams.get('q') ?? ''
+  const globalFilter = parseGlobalFilter(searchParams)
+  const columnFilters = useMemo(() => parseColumnFilters(searchParams), [searchParams])
+  const sorting = useMemo(() => parseSorting(searchParams), [searchParams])
+  const pagination = useMemo(() => parsePagination(searchParams), [searchParams])
 
-  const columnFilters = useMemo<MRT_ColumnFiltersState>(() => {
-    const raw = searchParams.get('status')
-    if (!raw) return []
-    const statuses = raw.split(',').filter(isStatus)
-    return statuses.length ? [{ id: 'status', value: statuses }] : []
-  }, [searchParams])
-
-  const sorting = useMemo<MRT_SortingState>(() => {
-    const raw = searchParams.get('sort')
-    if (!raw) return []
-    const [id, direction] = raw.split('.')
-    return id ? [{ id, desc: direction === 'desc' }] : []
-  }, [searchParams])
-
-  const pagination = useMemo<MRT_PaginationState>(() => {
-    const page = Number(searchParams.get('page'))
-    const size = Number(searchParams.get('size'))
-    return {
-      // The URL is 1-based for humans; the table is 0-based.
-      pageIndex: Number.isInteger(page) && page > 0 ? page - 1 : 0,
-      pageSize: Number.isInteger(size) && size > 0 ? size : DEFAULT_PAGE_SIZE,
-    }
-  }, [searchParams])
-
+  /**
+   * Writes through the URL. `mutate` is handed the params as they are *now*,
+   * not as they were when this component last rendered: two clicks in one tick
+   * would otherwise both resolve against the same stale page and the first
+   * would be lost.
+   */
   const update = useCallback(
     (mutate: (params: URLSearchParams) => void, options?: { replace?: boolean }) => {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev)
-          mutate(next)
-          return next
-        },
-        { replace: options?.replace ?? false },
-      )
+      // Read the live URL rather than the params React Router passes in: those
+      // come from the last render, so a second click in the same tick would
+      // resolve against the old page and silently drop the first one. The
+      // address bar is already up to date, because navigation writes it
+      // synchronously.
+      const next = new URLSearchParams(window.location.search)
+      mutate(next)
+      setSearchParams(next, { replace: options?.replace ?? false })
     },
     [setSearchParams],
   )
 
   const setGlobalFilter = useCallback(
     (updater: Updater<string | undefined>) => {
-      const value = resolve(updater, globalFilter) ?? ''
       update(
         (params) => {
+          const value = resolve(updater, parseGlobalFilter(params)) ?? ''
           if (value) params.set('q', value)
           else params.delete('q')
           params.delete('page') // a new search starts at page 1
@@ -84,44 +97,44 @@ export function useTableUrlState() {
         { replace: true },
       )
     },
-    [globalFilter, update],
+    [update],
   )
 
   const setColumnFilters = useCallback(
     (updater: Updater<MRT_ColumnFiltersState>) => {
-      const next = resolve(updater, columnFilters)
-      const statuses = next.find((f) => f.id === 'status')?.value
       update((params) => {
+        const next = resolve(updater, parseColumnFilters(params))
+        const statuses = next.find((f) => f.id === 'status')?.value
         if (Array.isArray(statuses) && statuses.length) params.set('status', statuses.join(','))
         else params.delete('status')
         params.delete('page')
       })
     },
-    [columnFilters, update],
+    [update],
   )
 
   const setSorting = useCallback(
     (updater: Updater<MRT_SortingState>) => {
-      const next = resolve(updater, sorting)
       update((params) => {
+        const next = resolve(updater, parseSorting(params))
         if (next.length) params.set('sort', `${next[0].id}.${next[0].desc ? 'desc' : 'asc'}`)
         else params.delete('sort')
       })
     },
-    [sorting, update],
+    [update],
   )
 
   const setPagination = useCallback(
     (updater: Updater<MRT_PaginationState>) => {
-      const next = resolve(updater, pagination)
       update((params) => {
+        const next = resolve(updater, parsePagination(params))
         if (next.pageIndex > 0) params.set('page', String(next.pageIndex + 1))
         else params.delete('page')
         if (next.pageSize !== DEFAULT_PAGE_SIZE) params.set('size', String(next.pageSize))
         else params.delete('size')
       })
     },
-    [pagination, update],
+    [update],
   )
 
   return {

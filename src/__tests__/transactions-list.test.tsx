@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import App from '../App'
@@ -79,6 +79,21 @@ describe('transactions list', () => {
 
     window.history.back()
     await waitFor(() => expect(window.location.search).not.toContain('page=2'))
+  })
+
+  it('advances two pages when Next is clicked twice in quick succession', async () => {
+    await signedIn('/transactions')
+    await rowsLoaded()
+    const next = screen.getByRole('button', { name: /next page/i })
+
+    // Both clicks land before React re-renders: each must see the page the
+    // previous one wrote, not the page this component rendered with.
+    await act(async () => {
+      fireEvent.click(next)
+      fireEvent.click(next)
+    })
+
+    await waitFor(() => expect(window.location.search).toContain('page=3'))
   })
 
   it('opens the detail page when a row is clicked', async () => {
