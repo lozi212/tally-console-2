@@ -5,7 +5,7 @@ import { useLocalStorageState } from '../hooks/useLocalStorageState'
 import { FullPageError, FullPageLoader } from '../components/FullPageStatus'
 import type { LoginResponse, User } from '../types/transaction'
 import { AuthContext, meQueryKey, TOKEN_STORAGE_KEY, type AuthContextValue } from './authContext'
-import { recoverDevSession, USERNAME_STORAGE_KEY } from './devSessionRecovery'
+import { recoverDevSession, rememberUsernameFrom, USERNAME_STORAGE_KEY } from './devSessionRecovery'
 
 /**
  * Owns the session. A stored token is verified with GET /api/me before any
@@ -20,7 +20,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: meQueryKey(token),
     queryFn: async ({ signal }) => {
       try {
-        return await apiFetch<User>('/api/me', { token, signal })
+        const user = await apiFetch<User>('/api/me', { token, signal })
+        // A session that predates this code can still be recovered later.
+        rememberUsernameFrom(user)
+        return user
       } catch (error) {
         if (!isApiError(error, 401)) throw error
 

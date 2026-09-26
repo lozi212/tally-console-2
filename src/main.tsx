@@ -13,6 +13,9 @@ async function enableMocking() {
   const { worker } = await import('./mocks/browser')
   const { keepMockSessionsAcrossReloads } = await import('./mocks/dev-session-persistence')
   keepMockSessionsAcrossReloads()
+  // Says which code this tab is running: if this line is missing from the
+  // console, the tab is serving an older bundle and needs a hard reload.
+  console.info('[dev] Mock API ready — session recovery armed.')
   await worker.start({
     onUnhandledRequest: 'bypass',
     // Without this the browser may keep serving a cached worker script. A stale
