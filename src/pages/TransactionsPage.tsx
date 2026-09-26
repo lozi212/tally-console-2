@@ -130,6 +130,11 @@ export default function TransactionsPage() {
     autoResetPageIndex: false,
     enableMultiSort: false,
     enableColumnFilterModes: false,
+    // MRT 3 opens these menus with MUI's removed `MenuListProps`, which MUI 9
+    // forwards to the DOM. Neither is needed: headers sort on click and the
+    // toolbar toggles the filter row.
+    enableColumnActions: false,
+    enableHiding: false,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
     initialState: { density: 'comfortable' },
