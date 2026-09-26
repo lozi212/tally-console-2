@@ -31,10 +31,18 @@ describe('transaction detail', () => {
     expect(screen.getByText(/Dawit Bekele/)).toBeInTheDocument()
     expect(screen.getByText('Partially refunded')).toBeInTheDocument()
 
-    // Gross 3,000, already refunded 1,000, so 2,000 is refundable.
-    expect(screen.getByText('ETB 3,000.00')).toBeInTheDocument()
-    expect(screen.getByText('ETB 1,000.00')).toBeInTheDocument()
-    expect(screen.getByText('ETB 2,000.00')).toBeInTheDocument()
+    // Gross 3,000, already refunded 1,000, so 2,000 is refundable. Scoped to
+    // the amounts panel, since the line items add up to the gross as well.
+    const amounts = screen.getByText('Amounts').closest('.MuiPaper-root') as HTMLElement
+    expect(within(amounts).getByText('ETB 3,000.00')).toBeInTheDocument()
+    expect(within(amounts).getByText('ETB 1,000.00')).toBeInTheDocument()
+    expect(within(amounts).getByText('ETB 2,000.00')).toBeInTheDocument()
+
+    // The line items total back to the gross amount.
+    const items = screen.getByText(/^Line items/).closest('.MuiPaper-root') as HTMLElement
+    const itemRows = within(items).getAllByRole('row')
+    expect(itemRows[itemRows.length - 1]).toHaveTextContent('Total')
+    expect(itemRows[itemRows.length - 1]).toHaveTextContent('ETB 3,000.00')
 
     expect(screen.getByText('Annual plan')).toBeInTheDocument()
     expect(screen.getByText('Setup fee')).toBeInTheDocument()

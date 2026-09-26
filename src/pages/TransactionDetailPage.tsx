@@ -4,8 +4,6 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Divider,
   LinearProgress,
   Link,
@@ -21,6 +19,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
+import ArrowBackIcon from '@mui/icons-material/ArrowBackOutlined'
 import StatusChip from '../components/StatusChip'
 import RefundDialog from '../components/RefundDialog'
 import { formatFullDate, formatMoney, humanise } from '../lib/format'
@@ -49,33 +48,46 @@ export default function TransactionDetailPage() {
   const refundBlockedReason = NOT_REFUNDABLE_REASON[data.status] ?? 'Nothing left to refund.'
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={2.5}>
       {/* Revalidating cached data: the page stays readable, the bar shows work. */}
       <Box sx={{ height: 4 }}>{isFetching && <LinearProgress />}</Box>
 
       <Box>
-        <Button size="small" onClick={() => navigate(-1)} sx={{ ml: -1 }}>
-          ← Back
+        <Button
+          size="small"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate(-1)}
+          sx={{ ml: -1 }}
+        >
+          Back
         </Button>
       </Box>
 
-      <Header transaction={data} />
+      {/* Title and the one action, kept together at the top. */}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        sx={{ alignItems: { sm: 'flex-start' }, justifyContent: 'space-between' }}
+      >
+        <Stack spacing={1} sx={{ minWidth: 0 }}>
+          <Typography variant="h5" component="h1" sx={{ wordBreak: 'break-word' }}>
+            {data.reference}
+          </Typography>
+          <Box>
+            <StatusChip status={data.status} />
+          </Box>
+        </Stack>
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <Amount label="Gross" value={data.amount} />
-        <Amount label="Refunded" value={data.refundedAmount} />
-        <Amount label="Refundable" value={refundable} />
-        <Box sx={{ flex: 1 }} />
-        <Box sx={{ alignSelf: 'center' }}>
+        <Box sx={{ flexShrink: 0 }}>
           {canRefund ? (
-            <Button variant="contained" onClick={() => setDialogOpen(true)}>
+            <Button variant="contained" size="large" onClick={() => setDialogOpen(true)}>
               Refund
             </Button>
           ) : (
             <Tooltip title={refundBlockedReason}>
               {/* A disabled button fires no events, so the tooltip needs a wrapper. */}
               <span>
-                <Button variant="contained" disabled>
+                <Button variant="contained" size="large" disabled>
                   Refund
                 </Button>
               </span>
@@ -84,7 +96,21 @@ export default function TransactionDetailPage() {
         </Box>
       </Stack>
 
-      <LineItems transaction={data} />
+      {/* Line items take the width; the figures and facts sit beside them. */}
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 2.5,
+          gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 2fr) minmax(0, 1fr)' },
+          alignItems: 'start',
+        }}
+      >
+        <LineItems transaction={data} />
+        <Stack spacing={2.5}>
+          <Summary transaction={data} refundable={refundable} />
+          <Details transaction={data} />
+        </Stack>
+      </Box>
 
       <RefundDialog
         transaction={data}
@@ -106,45 +132,72 @@ export default function TransactionDetailPage() {
   )
 }
 
-function Header({ transaction }: { transaction: Transaction }) {
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Stack spacing={1}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-        <Typography variant="h5" component="h1" sx={{ wordBreak: 'break-all' }}>
-          {transaction.reference}
-        </Typography>
-        <StatusChip status={transaction.status} />
-      </Stack>
-      <Typography variant="body2" color="text.secondary">
-        {transaction.customer.name}
-        {transaction.customer.email ? ` · ${transaction.customer.email}` : ''} ·{' '}
-        {humanise(transaction.method)} · {formatFullDate(transaction.createdAt)}
+    <Paper variant="outlined">
+      <Typography variant="subtitle2" sx={{ p: 2, py: 1.5 }}>
+        {title}
+      </Typography>
+      <Divider />
+      {children}
+    </Paper>
+  )
+}
+
+function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{ justifyContent: 'space-between', alignItems: 'baseline', px: 2, py: 1 }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+        {label}
+      </Typography>
+      <Typography
+        variant={strong ? 'subtitle1' : 'body2'}
+        sx={{ fontWeight: strong ? 700 : 400, textAlign: 'right', wordBreak: 'break-word' }}
+      >
+        {value}
       </Typography>
     </Stack>
   )
 }
 
-function Amount({ label, value }: { label: string; value: number }) {
+function Summary({ transaction, refundable }: { transaction: Transaction; refundable: number }) {
   return (
-    <Card variant="outlined" sx={{ minWidth: 160 }}>
-      <CardContent>
-        <Typography variant="overline" color="text.secondary">
-          {label}
-        </Typography>
-        <Typography variant="h6">{formatMoney(value)}</Typography>
-      </CardContent>
-    </Card>
+    <Panel title="Amounts">
+      <Box sx={{ py: 0.5 }}>
+        <Row label="Gross" value={formatMoney(transaction.amount)} />
+        <Row label="Refunded" value={formatMoney(transaction.refundedAmount)} />
+        <Divider sx={{ my: 0.5 }} />
+        <Row label="Refundable" value={formatMoney(refundable)} strong />
+      </Box>
+    </Panel>
+  )
+}
+
+function Details({ transaction }: { transaction: Transaction }) {
+  return (
+    <Panel title="Details">
+      <Box sx={{ py: 0.5 }}>
+        <Row label="Customer" value={transaction.customer.name} />
+        <Row label="Email" value={transaction.customer.email || '—'} />
+        <Row label="Method" value={humanise(transaction.method)} />
+        {/* The exact time, not "3 days ago": on one transaction the precise
+            moment is what a merchant reconciles against. */}
+        <Row label="Created" value={formatFullDate(transaction.createdAt)} />
+      </Box>
+    </Panel>
   )
 }
 
 function LineItems({ transaction }: { transaction: Transaction }) {
   const items = transaction.items ?? []
+  const total = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+
   return (
-    <Paper variant="outlined">
-      <Typography variant="subtitle1" sx={{ p: 2, pb: 1 }}>
-        Line items
-      </Typography>
-      <Divider />
+    <Panel title={`Line items (${items.length})`}>
       <Table size="small">
         <TableHead>
           <TableRow>
@@ -163,9 +216,17 @@ function LineItems({ transaction }: { transaction: Transaction }) {
               <TableCell align="right">{formatMoney(item.quantity * item.unitPrice)}</TableCell>
             </TableRow>
           ))}
+          <TableRow>
+            <TableCell colSpan={3} sx={{ borderBottom: 0, fontWeight: 600 }}>
+              Total
+            </TableCell>
+            <TableCell align="right" sx={{ borderBottom: 0, fontWeight: 600 }}>
+              {formatMoney(Math.round(total * 100) / 100)}
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
-    </Paper>
+    </Panel>
   )
 }
 
@@ -190,12 +251,19 @@ function DetailSkeleton() {
   return (
     <Stack spacing={3} aria-label="Loading transaction">
       <Skeleton variant="text" width={280} height={48} />
-      <Stack direction="row" spacing={2}>
-        <Skeleton variant="rounded" width={160} height={90} />
-        <Skeleton variant="rounded" width={160} height={90} />
-        <Skeleton variant="rounded" width={160} height={90} />
-      </Stack>
-      <Skeleton variant="rounded" height={220} />
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 2.5,
+          gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 2fr) minmax(0, 1fr)' },
+        }}
+      >
+        <Skeleton variant="rounded" height={260} />
+        <Stack spacing={2.5}>
+          <Skeleton variant="rounded" height={140} />
+          <Skeleton variant="rounded" height={190} />
+        </Stack>
+      </Box>
     </Stack>
   )
 }
