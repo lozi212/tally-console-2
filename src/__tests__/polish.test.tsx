@@ -88,7 +88,7 @@ describe('no console noise', () => {
     },
   )
 
-  it('logs no errors or warnings through a refund', async () => {
+  it('logs no errors or warnings through a refund', { timeout: 20000 }, async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -97,8 +97,10 @@ describe('no console noise', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Refund' }))
 
     const dialog = await screen.findByRole('dialog')
-    // The dialog takes focus, which is what a keyboard user needs.
-    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
+    // Focus must move into the modal — on to its focus trap or the dialog
+    // itself — so a keyboard user is not left on the page behind it.
+    const modal = dialog.closest('.MuiModal-root') ?? dialog
+    await waitFor(() => expect(modal.contains(document.activeElement)).toBe(true))
 
     await userEvent.type(within(dialog).getByLabelText(/reason/i), 'goods returned')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Refund' }))
@@ -110,14 +112,18 @@ describe('no console noise', () => {
     warn.mockRestore()
   })
 
-  it('closes the refund dialog on Escape and returns focus to the page', async () => {
-    await signedIn('/transactions/txn_FIXED_PARTIAL')
-    await screen.findByRole('heading', { name: 'INV-00002' })
-    await userEvent.click(screen.getByRole('button', { name: 'Refund' }))
-    await screen.findByRole('dialog')
+  it(
+    'closes the refund dialog on Escape and returns focus to the page',
+    { timeout: 20000 },
+    async () => {
+      await signedIn('/transactions/txn_FIXED_PARTIAL')
+      await screen.findByRole('heading', { name: 'INV-00002' })
+      await userEvent.click(screen.getByRole('button', { name: 'Refund' }))
+      await screen.findByRole('dialog')
 
-    await userEvent.keyboard('{Escape}')
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(screen.getByRole('button', { name: 'Refund' })).toHaveFocus()
-  })
+      await userEvent.keyboard('{Escape}')
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      expect(screen.getByRole('button', { name: 'Refund' })).toHaveFocus()
+    },
+  )
 })

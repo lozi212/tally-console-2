@@ -22,11 +22,11 @@ export default function ThemeModeProvider({ children }: { children: ReactNode })
   const value = useMemo<ThemeModeValue>(() => ({ mode, toggle }), [mode, toggle])
 
   return (
-    <ThemeModeContext value={value}>
+    <ThemeModeContext.Provider value={value}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
       </ThemeProvider>
-    </ThemeModeContext>
+    </ThemeModeContext.Provider>
   )
 }

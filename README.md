@@ -76,11 +76,9 @@ Every request goes through one client, `src/lib/api.ts`, which attaches the bear
 and turns failures into an `ApiError` carrying the status and the server's message. The
 query hooks call that client; nothing calls `fetch` directly.
 
-**Versions differ from the brief in three places**, all from the initial scaffold: React
-19 (brief: 18), Material React Table 3 (brief: v2) and React Router 7 (brief: v6). Each
-is the current major of the same library and the APIs used here are the documented ones
-for that version. The MRT major is why the two MUI workarounds below exist: MRT 3 is
-built against an older MUI than the one installed.
+The versions match the brief: React 18, MUI 6, Material React Table 2, TanStack Query 5
+and React Router 6. The scaffold had started on newer majors; aligning them also removed
+two workarounds, because MRT 2 and MUI 6 are built for each other.
 
 ## Notes and decisions
 
@@ -90,9 +88,6 @@ built against an older MUI than the one installed.
   need its own Back press) while filters, sorting and paging push one. The setters read
   the live URL rather than the values from the last render, so two clicks in the same
   tick cannot lose one.
-- **The search box keeps its own value** and writes to the URL 250 ms after typing stops.
-  Writing every keystroke straight to the URL dropped characters, because the field's
-  value came back a render later.
 - **Refunds patch the cache.** The response carries the updated transaction, so
   `setQueryData` updates the detail and the one list row. `invalidateQueries` would have
   refetched all 5,000 rows for a one-row change; a test asserts no such request is made.
@@ -105,11 +100,9 @@ built against an older MUI than the one installed.
 - **Two route trees rather than route guards.** A signed-out visitor has no route to the
   transactions pages at all, and the split gives the lazy loading a natural seam: the
   signed-out bundle is ~2 kB against ~590 kB signed in.
-- **Material React Table 3 predates MUI 9** and still passes the removed `InputProps`
-  and `MenuListProps`, which MUI forwards to the DOM and React warns about. 3.2.1 is the
-  latest release, so there is no upgrade: the table's search box is replaced with a plain
-  field, and the column-actions and column-hiding menus (neither required here) are off.
-  A test fails if the list, its search or its filters log anything to the console.
+- **The table's own controls are used as the brief asks**: MRT's global search, its
+  multi-select status filter, its sorting and its pagination. Only the state lives
+  outside it, in the URL.
 - **Every row is the same height.** Rows sized to their content changed the table's
   height from page to page, which moved the pagination controls: a second click aimed at
   Next could land on a row and open that transaction instead.

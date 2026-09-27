@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MaterialReactTable,
@@ -6,7 +6,7 @@ import {
   type MRT_ColumnDef,
   type MRT_FilterFn,
 } from 'material-react-table'
-import { Alert, Box, Button, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import { Alert, Box, Button, Stack, Tooltip, Typography } from '@mui/material'
 import StatusChip from '../components/StatusChip'
 import { formatDate, formatFullDate, formatMoney, humanise } from '../lib/format'
 import { usePrefetchTransaction, useTransactions } from '../transactions/queries'
@@ -37,23 +37,6 @@ export default function TransactionsPage() {
     setSorting,
     setPagination,
   } = useTableUrlState()
-
-  // The input keeps its own value while typing. Writing every keystroke
-  // straight to the URL made the field's value arrive back a render later, and
-  // characters typed in between were lost.
-  const [searchText, setSearchText] = useState(globalFilter)
-  const [lastUrlSearch, setLastUrlSearch] = useState(globalFilter)
-  if (globalFilter !== lastUrlSearch) {
-    // The URL changed elsewhere (Back, or a shared link): follow it.
-    setLastUrlSearch(globalFilter)
-    setSearchText(globalFilter)
-  }
-
-  useEffect(() => {
-    if (searchText === globalFilter) return
-    const timer = setTimeout(() => setGlobalFilter(searchText), 250)
-    return () => clearTimeout(timer)
-  }, [searchText, globalFilter, setGlobalFilter])
 
   const columns = useMemo<MRT_ColumnDef<TransactionListRow>[]>(
     () => [
@@ -147,28 +130,13 @@ export default function TransactionsPage() {
     autoResetPageIndex: false,
     enableMultiSort: false,
     enableColumnFilterModes: false,
-    // MRT 3 opens these menus with MUI's removed `MenuListProps`, which MUI 9
-    // forwards to the DOM. Neither is needed: headers sort on click and the
-    // toolbar toggles the filter row.
-    enableColumnActions: false,
-    enableHiding: false,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
-    initialState: { density: 'comfortable' },
-    // The built-in search box is replaced below: MRT 3 passes MUI's removed
-    // `InputProps` to TextField, which MUI 9 forwards to the DOM and React
-    // warns about. Ours is a plain controlled field.
-    positionGlobalFilter: 'none',
-    renderTopToolbarCustomActions: () => (
-      <TextField
-        size="small"
-        placeholder="Search transactions"
-        value={searchText}
-        onChange={(event) => setSearchText(event.target.value)}
-        slotProps={{ htmlInput: { 'aria-label': 'Search transactions' } }}
-        sx={{ minWidth: 260 }}
-      />
-    ),
+    initialState: { showGlobalFilter: true, density: 'comfortable' },
+    muiSearchTextFieldProps: {
+      placeholder: 'Search transactions',
+      inputProps: { 'aria-label': 'Search transactions' },
+    },
     // Rows must all be the same height. Otherwise a page of taller rows moves
     // the pagination controls, and the next click lands on a row instead of
     // the button it was aimed at.
