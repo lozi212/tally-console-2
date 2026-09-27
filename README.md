@@ -66,6 +66,22 @@ VITE_API_LATENCY=0
 | **Refund**       | Validates the amount against the refundable balance and requires a reason, shows the server's refusal message, then patches the transaction **and its row in the list** from the response — the 5,000-row list is never refetched.                                                             |
 | **Extras**       | The transaction is prefetched when the pointer rests on its row, and a light/dark choice is remembered across reloads and tabs.                                                                                                                                                                |
 
+## Stack
+
+TypeScript · Vite · React · MUI · Material React Table · TanStack Query (with devtools,
+loaded in development only) · React Router · React Hook Form + zod · Vitest, React
+Testing Library and user-event · ESLint + Prettier.
+
+Every request goes through one client, `src/lib/api.ts`, which attaches the bearer token
+and turns failures into an `ApiError` carrying the status and the server's message. The
+query hooks call that client; nothing calls `fetch` directly.
+
+**Versions differ from the brief in three places**, all from the initial scaffold: React
+19 (brief: 18), Material React Table 3 (brief: v2) and React Router 7 (brief: v6). Each
+is the current major of the same library and the APIs used here are the documented ones
+for that version. The MRT major is why the two MUI workarounds below exist: MRT 3 is
+built against an older MUI than the one installed.
+
 ## Notes and decisions
 
 - **The URL is the table's state.** Search, filters, sort and page are parsed from the

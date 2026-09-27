@@ -11,6 +11,15 @@ import ThemeModeProvider from './components/ThemeModeProvider'
 const AuthenticatedApp = lazy(() => import('./AuthenticatedApp'))
 const UnauthenticatedApp = lazy(() => import('./UnauthenticatedApp'))
 
+// Loaded only in development, so it never reaches a production bundle.
+const Devtools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@tanstack/react-query-devtools').then((module) => ({
+        default: module.ReactQueryDevtools,
+      })),
+    )
+  : () => null
+
 function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -38,6 +47,9 @@ export default function App() {
             <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
+        <Suspense fallback={null}>
+          <Devtools initialIsOpen={false} buttonPosition="bottom-left" />
+        </Suspense>
       </QueryClientProvider>
     </ThemeModeProvider>
   )
