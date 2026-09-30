@@ -34,8 +34,8 @@ export default function LoginPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 2 }}>
-      <Paper variant="outlined" sx={{ p: 4, width: '100%', maxWidth: 400 }}>
-        <Stack
+    <Paper variant="outlined" sx={{ p: 4, width: '100%', maxWidth: 360 }}>
+          <Stack
           component="form"
           spacing={2}
           noValidate
